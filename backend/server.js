@@ -28,13 +28,18 @@ const upload = multer({ storage: storage })
 // middlewares
 app.use(express.json())
 
-// Place CORS middleware before other middlewares
-app.use(cors({
-    origin: '*', // temporarily allow all origins for testing
+// CORS configuration
+const corsOptions = {
+    origin: process.env.NODE_ENV === 'production' 
+        ? ['https://your-frontend-domain.vercel.app']  // Replace with your actual frontend domain
+        : ['http://localhost:5173'],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization']
-}))
+}
+
+// Use CORS with options
+app.use(cors(corsOptions))
 
 // Add preflight handler
 app.options('*', cors())
