@@ -27,13 +27,16 @@ const upload = multer({ storage: storage })
 
 // middlewares
 app.use(express.json())
-app.use(cors({
-    origin: isDevelopment 
-        ? 'http://localhost:5173' 
-        : ['https://your-frontend-domain.com'],
+
+const corsOptions = {
+    origin: process.env.NODE_ENV === 'production'
+        ? ['https://music-app-frontend-eight-beta.vercel.app']
+        : '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}))
+    credentials: true
+}
+
+app.use(cors(corsOptions))
 
 // Routes
 app.use('/api/songs', songsRouter)
