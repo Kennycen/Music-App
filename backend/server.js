@@ -30,19 +30,17 @@ app.use(express.json())
 
 // CORS configuration
 const corsOptions = {
-    origin: process.env.NODE_ENV === 'production' 
-        ? ['https://your-frontend-domain.vercel.app']  // Replace with your actual frontend domain
-        : ['http://localhost:5173'],
+    origin: '*',  // Allow all origins
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    credentials: true,
+    credentials: false,  // Set to false since we're using '*' for origin
     allowedHeaders: ['Content-Type', 'Authorization']
 }
 
 // Use CORS with options
 app.use(cors(corsOptions))
 
-// Add preflight handler
-app.options('*', cors())
+// Make sure preflight requests work
+app.options('*', cors(corsOptions))
 
 // Routes
 app.use('/api/songs', songsRouter)
