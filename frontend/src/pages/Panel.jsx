@@ -34,8 +34,19 @@ const Panel = () => {
     setPlaylists(prev => [...prev, newPlaylist])
   }
 
-  const handlePlaylistClick = (playlistId) => {
-    navigate(`/playlist/${playlistId}`)
+  const handlePlaylistClick = async (e, playlistId) => {
+    e.preventDefault() // Prevent any default behavior
+    e.stopPropagation() // Stop event bubbling
+    
+    try {
+      // First check if the playlist exists and has songs
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/playlists/${playlistId}`)
+      if (response.data) {
+        navigate(`/playlist/${playlistId}`)
+      }
+    } catch (error) {
+      console.error('Error accessing playlist:', error)
+    }
   }
 
   const handleOpenModal = (e, playlist) => {
@@ -122,14 +133,18 @@ const Panel = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {playlists.map((playlist) => (
-              <div key={playlist._id} className="bg-white p-4 rounded-lg shadow-md relative flex justify-between items-center">
-                <div 
+              <div 
+                key={playlist._id} 
+                className="bg-white p-4 rounded-lg shadow-md relative flex justify-between items-center"
+              >
+                <Link 
+                  to={`/playlist/${playlist._id}`}
                   className="flex-1 cursor-pointer"
-                  onClick={() => handlePlaylistClick(playlist._id)}
+                  onClick={(e) => e.stopPropagation()} // Ensure clean click handling
                 >
                   <h3 className="text-xl font-semibold text-gray-900">{playlist.name}</h3>
                   <p className="text-gray-600">{playlist.songs.length} songs</p>
-                </div>
+                </Link>
                 <button 
                   onClick={(e) => handleOpenModal(e, playlist)}
                   className="p-2 hover:bg-gray-100 rounded-full ml-2"

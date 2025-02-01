@@ -113,10 +113,14 @@ export const AudioProvider = ({ children }) => {
   }
 
   const playPlaylist = (songs, startIndex = 0) => {
-    setPlaylist(songs)
-    setCurrentIndex(startIndex)
-    setCurrentSong(songs[startIndex])
-    setIsPlaying(true)
+    if (songs && songs.length > 0) {
+      setPlaylist(songs)
+      setCurrentIndex(startIndex)
+      setCurrentSong(songs[startIndex])
+      setIsPlaying(true)
+      setCurrentTime(0)
+      audioRef.current.currentTime = 0
+    }
   }
 
   const togglePlay = () => {
@@ -129,6 +133,16 @@ export const AudioProvider = ({ children }) => {
       setCurrentIndex(nextIndex)
       setCurrentSong(playlist[nextIndex])
       setIsPlaying(true)
+      // Reset current time for the new song
+      setCurrentTime(0)
+      audioRef.current.currentTime = 0
+    } else {
+      // If at the end of playlist, go back to first song
+      setCurrentIndex(0)
+      setCurrentSong(playlist[0])
+      setIsPlaying(true)
+      setCurrentTime(0)
+      audioRef.current.currentTime = 0
     }
   }
 
@@ -138,6 +152,17 @@ export const AudioProvider = ({ children }) => {
       setCurrentIndex(prevIndex)
       setCurrentSong(playlist[prevIndex])
       setIsPlaying(true)
+      // Reset current time for the new song
+      setCurrentTime(0)
+      audioRef.current.currentTime = 0
+    } else {
+      // If at the start of playlist, go to last song
+      const lastIndex = playlist.length - 1
+      setCurrentIndex(lastIndex)
+      setCurrentSong(playlist[lastIndex])
+      setIsPlaying(true)
+      setCurrentTime(0)
+      audioRef.current.currentTime = 0
     }
   }
 
