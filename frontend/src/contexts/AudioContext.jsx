@@ -12,6 +12,7 @@ export const AudioProvider = ({ children }) => {
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const audioRef = useRef(new Audio())
+  const [isAudioReady, setIsAudioReady] = useState(false)
 
   useEffect(() => {
     const audio = audioRef.current
@@ -34,16 +35,38 @@ export const AudioProvider = ({ children }) => {
   }, [])
 
   useEffect(() => {
+    const audio = audioRef.current
+
+    // Setup audio context for iOS
+    const initializeAudio = () => {
+      if (!isAudioReady) {
+        audio.load()
+        setIsAudioReady(true)
+      }
+    }
+
+    // Add touch/click listener to initialize audio
+    document.addEventListener('touchstart', initializeAudio, { once: true })
+    document.addEventListener('click', initializeAudio, { once: true })
+
+    return () => {
+      document.removeEventListener('touchstart', initializeAudio)
+      document.removeEventListener('click', initializeAudio)
+    }
+  }, [isAudioReady])
+
+  useEffect(() => {
     if (currentSong) {
       audioRef.current.src = currentSong.audioUrl
-      if (isPlaying) {
+      if (isPlaying && isAudioReady) {
         audioRef.current.play().catch(error => {
           console.error('Error playing audio:', error)
+          setIsPlaying(false) // Reset playing state if autoplay fails
         })
       }
       setCurrentTime(0)
     }
-  }, [currentSong])
+  }, [currentSong, isAudioReady])
 
   useEffect(() => {
     if (isPlaying) {
@@ -103,21 +126,28 @@ export const AudioProvider = ({ children }) => {
     return () => audio.removeEventListener('loadedmetadata', handleLoadedMetadata)
   }, [currentSong])
 
-  const playSong = (song) => {
-    if (currentSong?._id === song._id && isPlaying) {
-      setIsPlaying(false)
-    } else {
-      setCurrentSong(song)
-      setIsPlaying(true)
+  const playSong = async (song) => {
+    try {
+      if (currentSong?._id === song._id && isPlaying) {
+        setIsPlaying(false)
+        audioRef.current.pause()
+      } else {
+        setCurrentSong(song)
+        if (isAudioReady) {
+          setIsPlaying(true)
+        }
+      }
+    } catch (error) {
+      console.error('Error playing song:', error)
     }
   }
 
-  const playPlaylist = (songs, startIndex = 0) => {
+  const playPlaylist = (songs, startIndex = 0, shouldAutoPlay = false) => {
     if (songs && songs.length > 0) {
       setPlaylist(songs)
       setCurrentIndex(startIndex)
       setCurrentSong(songs[startIndex])
-      setIsPlaying(true)
+      setIsPlaying(shouldAutoPlay) // Only play if explicitly requested
       setCurrentTime(0)
       audioRef.current.currentTime = 0
     }
@@ -133,16 +163,6 @@ export const AudioProvider = ({ children }) => {
       setCurrentIndex(nextIndex)
       setCurrentSong(playlist[nextIndex])
       setIsPlaying(true)
-      // Reset current time for the new song
-      setCurrentTime(0)
-      audioRef.current.currentTime = 0
-    } else {
-      // If at the end of playlist, go back to first song
-      setCurrentIndex(0)
-      setCurrentSong(playlist[0])
-      setIsPlaying(true)
-      setCurrentTime(0)
-      audioRef.current.currentTime = 0
     }
   }
 
@@ -152,17 +172,6 @@ export const AudioProvider = ({ children }) => {
       setCurrentIndex(prevIndex)
       setCurrentSong(playlist[prevIndex])
       setIsPlaying(true)
-      // Reset current time for the new song
-      setCurrentTime(0)
-      audioRef.current.currentTime = 0
-    } else {
-      // If at the start of playlist, go to last song
-      const lastIndex = playlist.length - 1
-      setCurrentIndex(lastIndex)
-      setCurrentSong(playlist[lastIndex])
-      setIsPlaying(true)
-      setCurrentTime(0)
-      audioRef.current.currentTime = 0
     }
   }
 

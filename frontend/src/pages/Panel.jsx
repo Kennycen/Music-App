@@ -34,18 +34,19 @@ const Panel = () => {
     setPlaylists(prev => [...prev, newPlaylist])
   }
 
-  const handlePlaylistClick = async (e, playlistId) => {
-    e.preventDefault() // Prevent any default behavior
-    e.stopPropagation() // Stop event bubbling
-    
+  const handlePlaylistClick = async (playlistId) => {
     try {
-      // First check if the playlist exists and has songs
+      setLoading(true) // Add loading state
       const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/playlists/${playlistId}`)
       if (response.data) {
         navigate(`/playlist/${playlistId}`)
       }
     } catch (error) {
       console.error('Error accessing playlist:', error)
+      // Show error message to user
+      setError('Unable to open playlist. Please try again.')
+    } finally {
+      setLoading(false)
     }
   }
 
