@@ -52,12 +52,8 @@ const PlaylistView = () => {
   const handlePlay = (index) => {
     if (playlist?.songs?.length > 0) {
       try {
-        // Set up the playlist without auto-playing
-        setPlaylist(playlist.songs)
-        setCurrentIndex(index)
-        setCurrentSong(playlist.songs[index])
-        // Don't auto-start playing
-        setIsPlaying(false)
+        playPlaylist(playlist.songs, index)
+        // Let the user explicitly start playback through the MusicPlayer
       } catch (error) {
         console.error('Error setting up song:', error)
       }

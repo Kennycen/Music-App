@@ -13,6 +13,7 @@ export const AudioProvider = ({ children }) => {
   const [duration, setDuration] = useState(0)
   const audioRef = useRef(new Audio())
   const [isAudioReady, setIsAudioReady] = useState(false)
+  const [isInitialized, setIsInitialized] = useState(false)
 
   useEffect(() => {
     const audio = audioRef.current
@@ -56,17 +57,31 @@ export const AudioProvider = ({ children }) => {
   }, [isAudioReady])
 
   useEffect(() => {
-    if (currentSong) {
+    const handleUserInteraction = () => {
+      initializeAudio()
+    }
+
+    // Listen for any user interaction
+    document.addEventListener('touchstart', handleUserInteraction, { once: true })
+    document.addEventListener('click', handleUserInteraction, { once: true })
+
+    return () => {
+      document.removeEventListener('touchstart', handleUserInteraction)
+      document.removeEventListener('click', handleUserInteraction)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (currentSong && isInitialized) {
       audioRef.current.src = currentSong.audioUrl
-      if (isPlaying && isAudioReady) {
+      if (isPlaying) {
         audioRef.current.play().catch(error => {
           console.error('Error playing audio:', error)
-          setIsPlaying(false) // Reset playing state if autoplay fails
+          setIsPlaying(false)
         })
       }
-      setCurrentTime(0)
     }
-  }, [currentSong, isAudioReady])
+  }, [currentSong, isPlaying, isInitialized])
 
   useEffect(() => {
     if (isPlaying) {
@@ -142,14 +157,11 @@ export const AudioProvider = ({ children }) => {
     }
   }
 
-  const playPlaylist = (songs, startIndex = 0, shouldAutoPlay = false) => {
+  const playPlaylist = (songs, startIndex = 0) => {
     if (songs && songs.length > 0) {
       setPlaylist(songs)
       setCurrentIndex(startIndex)
       setCurrentSong(songs[startIndex])
-      setIsPlaying(shouldAutoPlay) // Only play if explicitly requested
-      setCurrentTime(0)
-      audioRef.current.currentTime = 0
     }
   }
 
@@ -195,7 +207,8 @@ export const AudioProvider = ({ children }) => {
         nextSong,
         previousSong,
         seekTo,
-        formatTime
+        formatTime,
+        isInitialized
       }}
     >
       {children}
