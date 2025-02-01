@@ -95,4 +95,37 @@ router.get('/:playlistId', async (req, res) => {
     }
 })
 
+// Update playlist name
+router.put('/:id', async (req, res) => {
+    try {
+        const { name } = req.body
+        const playlist = await Playlist.findByIdAndUpdate(
+            req.params.id,
+            { name },
+            { new: true }
+        )
+        if (!playlist) {
+            return res.status(404).json({ message: 'Playlist not found' })
+        }
+        res.json(playlist)
+    } catch (error) {
+        console.error('Error updating playlist:', error)
+        res.status(500).json({ message: 'Error updating playlist' })
+    }
+})
+
+// Delete playlist
+router.delete('/:id', async (req, res) => {
+    try {
+        const playlist = await Playlist.findByIdAndDelete(req.params.id)
+        if (!playlist) {
+            return res.status(404).json({ message: 'Playlist not found' })
+        }
+        res.json({ message: 'Playlist deleted successfully' })
+    } catch (error) {
+        console.error('Error deleting playlist:', error)
+        res.status(500).json({ message: 'Error deleting playlist' })
+    }
+})
+
 export default router 

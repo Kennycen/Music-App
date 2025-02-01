@@ -1,16 +1,14 @@
 import React from 'react'
-import { FaPlay, FaPause, FaStepBackward, FaStepForward, FaVolumeUp, FaVolumeMute } from 'react-icons/fa'
+import { FaPlay, FaPause, FaStepBackward, FaStepForward } from 'react-icons/fa'
 import { useAudio } from '../contexts/AudioContext'
 
 const MusicPlayer = () => {
   const {
     currentSong,
     isPlaying,
-    volume,
     togglePlay,
     nextSong,
-    previousSong,
-    handleVolumeChange
+    previousSong
   } = useAudio()
 
   return (
@@ -43,20 +41,6 @@ const MusicPlayer = () => {
             <FaStepForward />
           </button>
         </div>
-      </div>
-      <div className="flex items-center space-x-4">
-        <button className="text-gray-600">
-          {volume === 0 ? <FaVolumeMute /> : <FaVolumeUp />}
-        </button>
-        <input
-          type="range"
-          min="0"
-          max="100"
-          value={volume}
-          onChange={(e) => handleVolumeChange(parseInt(e.target.value))}
-          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-        />
-        <span className="text-sm text-gray-600 w-12">{volume}%</span>
       </div>
     </div>
   )

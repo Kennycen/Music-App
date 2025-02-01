@@ -7,7 +7,6 @@ const AudioContext = createContext()
 export const AudioProvider = ({ children }) => {
   const [currentSong, setCurrentSong] = useState(null)
   const [isPlaying, setIsPlaying] = useState(false)
-  const [volume, setVolume] = useState(50)
   const [playlist, setPlaylist] = useState([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [currentTime, setCurrentTime] = useState(0)
@@ -33,16 +32,6 @@ export const AudioProvider = ({ children }) => {
       audio.removeEventListener('durationchange', handleDurationChange)
     }
   }, [])
-
-  useEffect(() => {
-    // Set initial volume
-    audioRef.current.volume = volume / 100
-  }, [])
-
-  useEffect(() => {
-    // Update volume when it changes
-    audioRef.current.volume = volume / 100
-  }, [volume])
 
   useEffect(() => {
     if (currentSong) {
@@ -152,10 +141,6 @@ export const AudioProvider = ({ children }) => {
     }
   }
 
-  const handleVolumeChange = (newVolume) => {
-    setVolume(newVolume)
-  }
-
   const seekTo = (time) => {
     audioRef.current.currentTime = time
     setCurrentTime(time)
@@ -166,7 +151,6 @@ export const AudioProvider = ({ children }) => {
       value={{
         currentSong,
         isPlaying,
-        volume,
         currentTime,
         duration,
         playlist,
@@ -176,7 +160,6 @@ export const AudioProvider = ({ children }) => {
         togglePlay,
         nextSong,
         previousSong,
-        handleVolumeChange,
         seekTo,
         formatTime
       }}

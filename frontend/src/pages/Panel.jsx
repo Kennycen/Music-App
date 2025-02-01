@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { FaBook, FaPlus, FaMusic } from 'react-icons/fa'
+import { FaBook, FaPlus, FaMusic, FaEllipsisV } from 'react-icons/fa'
 import axios from 'axios'
 import CreatePlaylist from '../components/CreatePlaylist'
 
@@ -8,6 +8,9 @@ const Panel = () => {
   const [playlists, setPlaylists] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
+  const [selectedPlaylist, setSelectedPlaylist] = useState(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [newPlaylistName, setNewPlaylistName] = useState('')
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -31,15 +34,45 @@ const Panel = () => {
     setPlaylists(prev => [...prev, newPlaylist])
   }
 
-  const handlePlaylistClick = async (playlistId) => {
+  const handlePlaylistClick = (playlistId) => {
+    navigate(`/playlist/${playlistId}`)
+  }
+
+  const handleOpenModal = (e, playlist) => {
+    e.stopPropagation() // Prevent playlist click
+    setSelectedPlaylist(playlist)
+    setNewPlaylistName(playlist.name)
+    setIsModalOpen(true)
+  }
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false)
+    setSelectedPlaylist(null)
+    setNewPlaylistName('')
+  }
+
+  const handleDeletePlaylist = async () => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/playlists/${playlistId}`)
-      const playlist = response.data
-      if (playlist.songs.length > 0) {
-        navigate(`/playlist/${playlistId}`)
-      }
+      await axios.delete(`${import.meta.env.VITE_API_URL}/api/playlists/${selectedPlaylist._id}`)
+      setPlaylists(playlists.filter(p => p._id !== selectedPlaylist._id))
+      handleCloseModal()
     } catch (error) {
-      console.error('Error loading playlist:', error)
+      console.error('Error deleting playlist:', error)
+    }
+  }
+
+  const handleUpdatePlaylistName = async () => {
+    if (!newPlaylistName.trim()) return
+    try {
+      const response = await axios.put(`${import.meta.env.VITE_API_URL}/api/playlists/${selectedPlaylist._id}`, {
+        name: newPlaylistName
+      })
+      setPlaylists(playlists.map(p => 
+        p._id === selectedPlaylist._id ? response.data : p
+      ))
+      handleCloseModal()
+    } catch (error) {
+      console.error('Error updating playlist name:', error)
     }
   }
 
@@ -89,23 +122,67 @@ const Panel = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {playlists.map((playlist) => (
-              <div key={playlist._id} className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-                <h3 className="font-semibold text-xl mb-2">{playlist.name}</h3>
-                <p className="text-gray-500 mb-4">
-                  {playlist.songs.length} {playlist.songs.length === 1 ? 'song' : 'songs'}
-                </p>
-                <button
+              <div key={playlist._id} className="bg-white p-4 rounded-lg shadow-md relative flex justify-between items-center">
+                <div 
+                  className="flex-1 cursor-pointer"
                   onClick={() => handlePlaylistClick(playlist._id)}
-                  className="inline-flex items-center text-blue-500 hover:text-blue-600 font-medium"
                 >
-                  <span>View Playlist</span>
-                  <FaPlus className="ml-2" />
+                  <h3 className="text-xl font-semibold text-gray-900">{playlist.name}</h3>
+                  <p className="text-gray-600">{playlist.songs.length} songs</p>
+                </div>
+                <button 
+                  onClick={(e) => handleOpenModal(e, playlist)}
+                  className="p-2 hover:bg-gray-100 rounded-full ml-2"
+                >
+                  <FaEllipsisV className="text-gray-600" />
                 </button>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* Modal */}
+      {isModalOpen && selectedPlaylist && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-xl font-bold mb-4 text-gray-900">Playlist Options</h3>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Playlist Name
+              </label>
+              <input
+                type="text"
+                value={newPlaylistName}
+                onChange={(e) => setNewPlaylistName(e.target.value)}
+                className="w-full px-3 py-2 bg-white text-gray-900 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={handleUpdatePlaylistName}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                Update Name
+              </button>
+              <button
+                onClick={handleDeletePlaylist}
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+              >
+                Delete Playlist
+              </button>
+              <button
+                onClick={handleCloseModal}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

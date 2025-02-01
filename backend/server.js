@@ -42,15 +42,51 @@ app.use(cors(corsOptions))
 // Make sure preflight requests work
 app.options('*', cors(corsOptions))
 
+// Add this near the top of your file
+app.use((req, res, next) => {
+    console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+    next();
+});
+
 // Routes
 app.use('/api/songs', songsRouter)
-app.use('/api/playlists', playlistsRouter)
+app.use('/api/playlists', (req, res, next) => {
+    console.log('Playlist request received:', {
+        method: req.method,
+        url: req.url,
+        body: req.body,
+        query: req.query
+    });
+    next();
+}, playlistsRouter)
 
-// Basic error handling middleware
+// Update error handling middleware
 app.use((err, req, res, next) => {
-    console.error(err.stack)
-    res.status(500).send('Something broke!')
-})
+    console.error('Error details:', {
+        message: err.message,
+        stack: err.stack,
+        path: req.path,
+        method: req.method
+    });
+    
+    res.status(err.status || 500).json({
+        error: {
+            message: err.message || 'Internal server error',
+            status: err.status || 500
+        }
+    });
+});
+
+// Add this catch-all route at the end
+app.use('*', (req, res) => {
+    console.log('404 - Route not found:', req.originalUrl);
+    res.status(404).json({
+        error: {
+            message: `Route ${req.originalUrl} not found`,
+            status: 404
+        }
+    });
+});
 
 // api endpoints
 app.get('/', (req, res)=> {
