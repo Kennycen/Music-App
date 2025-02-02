@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { FaBook, FaPlus, FaMusic, FaEllipsisV } from 'react-icons/fa'
-import axios from 'axios'
+import api from '../config/axios'
 import CreatePlaylist from '../components/CreatePlaylist'
 
 const Panel = () => {
@@ -19,7 +19,7 @@ const Panel = () => {
 
   const fetchPlaylists = async () => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/playlists`)
+      const response = await api.get('/api/playlists')
       setPlaylists(response.data)
       setError("")
     } catch (err) {
@@ -36,14 +36,13 @@ const Panel = () => {
 
   const handlePlaylistClick = async (playlistId) => {
     try {
-      setLoading(true) // Add loading state
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/playlists/${playlistId}`)
+      setLoading(true)
+      const response = await api.get(`/api/playlists/${playlistId}`)
       if (response.data) {
         navigate(`/playlist/${playlistId}`)
       }
     } catch (error) {
       console.error('Error accessing playlist:', error)
-      // Show error message to user
       setError('Unable to open playlist. Please try again.')
     } finally {
       setLoading(false)
@@ -65,7 +64,7 @@ const Panel = () => {
 
   const handleDeletePlaylist = async () => {
     try {
-      await axios.delete(`${import.meta.env.VITE_API_URL}/api/playlists/${selectedPlaylist._id}`)
+      await api.delete(`/api/playlists/${selectedPlaylist._id}`)
       setPlaylists(playlists.filter(p => p._id !== selectedPlaylist._id))
       handleCloseModal()
     } catch (error) {
@@ -76,7 +75,7 @@ const Panel = () => {
   const handleUpdatePlaylistName = async () => {
     if (!newPlaylistName.trim()) return
     try {
-      const response = await axios.put(`${import.meta.env.VITE_API_URL}/api/playlists/${selectedPlaylist._id}`, {
+      const response = await api.put(`/api/playlists/${selectedPlaylist._id}`, {
         name: newPlaylistName
       })
       setPlaylists(playlists.map(p => 

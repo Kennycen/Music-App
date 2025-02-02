@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import axios from 'axios'
+import api from '../config/axios'
 
 const CreatePlaylist = ({ onPlaylistCreated }) => {
   const [name, setName] = useState('')
@@ -11,7 +11,7 @@ const CreatePlaylist = ({ onPlaylistCreated }) => {
 
     setIsCreating(true)
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/playlists`, {
+      const response = await api.post('/api/playlists', {
         name: name.trim()
       })
       onPlaylistCreated(response.data)

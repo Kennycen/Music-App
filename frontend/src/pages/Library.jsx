@@ -4,18 +4,11 @@ import Modal from '../components/Modal'
 import SongList from '../components/SongList'
 import SearchBar from '../components/SearchBar'
 import Pagination from '../components/Pagination'
-import axios from 'axios'
+import api from '../config/axios'
 import { useNavigate } from 'react-router-dom'
 import { useAudio } from '../contexts/AudioContext'
 
 const ITEMS_PER_PAGE = 10
-
-// Mock data for playlists (we'll implement real playlists later)
-const mockPlaylists = [
-  { id: 1, name: "My Favorites" },
-  { id: 2, name: "Workout Mix" },
-  { id: 3, name: "Chill Vibes" },
-]
 
 const Library = () => {
   const [currentPage, setCurrentPage] = useState(1)
@@ -35,8 +28,8 @@ const Library = () => {
     const fetchData = async () => {
       try {
         const [songsRes, playlistsRes] = await Promise.all([
-          axios.get(`${import.meta.env.VITE_API_URL}/api/songs`),
-          axios.get(`${import.meta.env.VITE_API_URL}/api/playlists`)
+          api.get('/api/songs'),
+          api.get('/api/playlists')
         ])
         setLibrary(songsRes.data)
         setPlaylists(playlistsRes.data)
@@ -79,7 +72,7 @@ const Library = () => {
 
   const handleRemove = async (songId) => {
     try {
-      await axios.delete(`${import.meta.env.VITE_API_URL}/api/songs/${songId}`)
+      await api.delete(`/api/songs/${songId}`)
       setLibrary(prevLibrary => prevLibrary.filter(song => song._id !== songId))
       setModalOpen(false)
     } catch (err) {
@@ -91,7 +84,7 @@ const Library = () => {
   const handleAddToPlaylist = async (playlistId) => {
     setAddingToPlaylist(true)
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/playlists/${playlistId}/songs`, {
+      const response = await api.post(`/api/playlists/${playlistId}/songs`, {
         songId: selectedSong._id
       })
       

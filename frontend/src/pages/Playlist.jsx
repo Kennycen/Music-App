@@ -2,32 +2,15 @@ import React, { useState } from 'react'
 import { FaSearch } from 'react-icons/fa'
 import Navbar from '../components/Navbar'
 
-const availableSongs = [
-    { id: 1, title: "Bohemian Rhapsody", artist: "Queen" },
-    { id: 2, title: "Imagine", artist: "John Lennon" },
-    { id: 3, title: "Like a Rolling Stone", artist: "Bob Dylan" },
-    { id: 4, title: "Smells Like Teen Spirit", artist: "Nirvana" },
-    { id: 5, title: "Billie Jean", artist: "Michael Jackson" },
-    { id: 6, title: "Hey Jude", artist: "The Beatles" },
-    { id: 7, title: "I Want to Hold Your Hand", artist: "The Beatles" },
-    { id: 8, title: "Purple Rain", artist: "Prince" },
-    { id: 9, title: "Johnny B. Goode", artist: "Chuck Berry" },
-    { id: 10, title: "Respect", artist: "Aretha Franklin" },
-]
-
 const Playlist = () => {
     const [playlistName, setPlaylistName] = useState("")
     const [selectedSongs, setSelectedSongs] = useState([])
     const [searchQuery, setSearchQuery] = useState("")
-    const [filteredSongs, setFilteredSongs] = useState(availableSongs)
+    const [filteredSongs, setFilteredSongs] = useState([])
 
     React.useEffect(() => {
         const lowercasedQuery = searchQuery.toLowerCase()
-        const filtered = availableSongs.filter(
-            (song) =>
-                song.title.toLowerCase().includes(lowercasedQuery) || 
-                song.artist.toLowerCase().includes(lowercasedQuery)
-        )
+        const filtered = []
         setFilteredSongs(filtered)
     }, [searchQuery])
 

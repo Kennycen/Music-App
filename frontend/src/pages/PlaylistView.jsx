@@ -6,6 +6,7 @@ import { useAudio } from '../contexts/AudioContext'
 import { FaArrowLeft } from 'react-icons/fa'
 import MusicPlayer from '../components/MusicPlayer'
 import Modal from '../components/Modal'
+import api from '../config/axios'  // Import the configured axios instance
 
 const PlaylistView = () => {
   const { playlistId } = useParams()
@@ -18,25 +19,28 @@ const PlaylistView = () => {
   const [selectedSong, setSelectedSong] = useState(null)
 
   useEffect(() => {
-    fetchPlaylist()
-  }, [playlistId])
-
-  const fetchPlaylist = async () => {
-    try {
-      const response = await axios.get(`http://localhost:4000/api/playlists/${playlistId}`)
-      setPlaylist(response.data)
-      setError("")
-    } catch (err) {
-      console.error('Error fetching playlist:', err)
-      setError("Failed to load playlist")
-    } finally {
-      setLoading(false)
+    const fetchPlaylist = async () => {
+      try {
+        setLoading(true)
+        const response = await api.get(`/api/playlists/${playlistId}`)  // Remove the base URL
+        setPlaylist(response.data)
+        setError(null)
+      } catch (err) {
+        console.error('Error fetching playlist:', err)
+        setError('Failed to load playlist')
+      } finally {
+        setLoading(false)
+      }
     }
-  }
+
+    if (playlistId) {
+      fetchPlaylist()
+    }
+  }, [playlistId])
 
   const handleRemoveSong = async (songId) => {
     try {
-      await axios.delete(`http://localhost:4000/api/playlists/${playlistId}/songs/${songId}`)
+      await api.delete(`/api/playlists/${playlistId}/songs/${songId}`)
       fetchPlaylist() // Refresh playlist after removing song
       setModalOpen(false)
     } catch (err) {
