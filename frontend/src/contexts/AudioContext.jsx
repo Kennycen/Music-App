@@ -12,8 +12,6 @@ export const AudioProvider = ({ children }) => {
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const audioRef = useRef(new Audio())
-  const [isAudioReady, setIsAudioReady] = useState(false)
-  const [isInitialized, setIsInitialized] = useState(false)
 
   useEffect(() => {
     const audio = audioRef.current
@@ -36,52 +34,16 @@ export const AudioProvider = ({ children }) => {
   }, [])
 
   useEffect(() => {
-    const audio = audioRef.current
-
-    // Setup audio context for iOS
-    const initializeAudio = () => {
-      if (!isAudioReady) {
-        audio.load()
-        setIsAudioReady(true)
-      }
-    }
-
-    // Add touch/click listener to initialize audio
-    document.addEventListener('touchstart', initializeAudio, { once: true })
-    document.addEventListener('click', initializeAudio, { once: true })
-
-    return () => {
-      document.removeEventListener('touchstart', initializeAudio)
-      document.removeEventListener('click', initializeAudio)
-    }
-  }, [isAudioReady])
-
-  useEffect(() => {
-    const handleUserInteraction = () => {
-      initializeAudio()
-    }
-
-    // Listen for any user interaction
-    document.addEventListener('touchstart', handleUserInteraction, { once: true })
-    document.addEventListener('click', handleUserInteraction, { once: true })
-
-    return () => {
-      document.removeEventListener('touchstart', handleUserInteraction)
-      document.removeEventListener('click', handleUserInteraction)
-    }
-  }, [])
-
-  useEffect(() => {
-    if (currentSong && isInitialized) {
+    if (currentSong) {
       audioRef.current.src = currentSong.audioUrl
       if (isPlaying) {
         audioRef.current.play().catch(error => {
           console.error('Error playing audio:', error)
-          setIsPlaying(false)
         })
       }
+      setCurrentTime(0)
     }
-  }, [currentSong, isPlaying, isInitialized])
+  }, [currentSong])
 
   useEffect(() => {
     if (isPlaying) {
@@ -93,7 +55,7 @@ export const AudioProvider = ({ children }) => {
     }
   }, [isPlaying])
 
-  // Handle song end and auto-play next
+  // Update this useEffect to auto-play next song
   useEffect(() => {
     const audio = audioRef.current
 
@@ -101,10 +63,10 @@ export const AudioProvider = ({ children }) => {
       if (playlist.length > 0) {
         const nextIndex = currentIndex + 1
         if (nextIndex < playlist.length) {
-          // Play next song
+          // Play next song automatically
           setCurrentIndex(nextIndex)
           setCurrentSong(playlist[nextIndex])
-          setIsPlaying(true)
+          setIsPlaying(true) // Auto-play next song
         } else {
           // End of playlist
           setIsPlaying(false)
@@ -141,28 +103,20 @@ export const AudioProvider = ({ children }) => {
     return () => audio.removeEventListener('loadedmetadata', handleLoadedMetadata)
   }, [currentSong])
 
-  const playSong = async (song) => {
-    try {
-      if (currentSong?._id === song._id && isPlaying) {
-        setIsPlaying(false)
-        audioRef.current.pause()
-      } else {
-        setCurrentSong(song)
-        if (isAudioReady) {
-          setIsPlaying(true)
-        }
-      }
-    } catch (error) {
-      console.error('Error playing song:', error)
+  const playSong = (song) => {
+    if (currentSong?._id === song._id && isPlaying) {
+      setIsPlaying(false)
+    } else {
+      setCurrentSong(song)
+      setIsPlaying(true)
     }
   }
 
   const playPlaylist = (songs, startIndex = 0) => {
-    if (songs && songs.length > 0) {
-      setPlaylist(songs)
-      setCurrentIndex(startIndex)
-      setCurrentSong(songs[startIndex])
-    }
+    setPlaylist(songs)
+    setCurrentIndex(startIndex)
+    setCurrentSong(songs[startIndex])
+    setIsPlaying(true)
   }
 
   const togglePlay = () => {
@@ -207,8 +161,7 @@ export const AudioProvider = ({ children }) => {
         nextSong,
         previousSong,
         seekTo,
-        formatTime,
-        isInitialized
+        formatTime
       }}
     >
       {children}
