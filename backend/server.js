@@ -27,6 +27,12 @@ app.use(cors({
     credentials: true
 }))
 
+// Increase the server timeout
+app.use((req, res, next) => {
+    res.setTimeout(300000); // 5 minutes
+    next();
+});
+
 // Routes
 app.use('/api/songs', songsRouter)
 app.use('/api/playlists', playlistsRouter)
@@ -62,7 +68,11 @@ app.use((err, req, res, next) => {
     })
 })
 
-const server = app.listen(port, () => console.log('Server started on PORT: ' + port))
+// Set server timeout
+const server = app.listen(port, () => {
+    server.timeout = 300000; // 5 minutes
+    console.log('Server started on PORT: ' + port)
+})
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {

@@ -18,12 +18,15 @@ const upload = multer({
         }
     },
     limits: {
-        fileSize: 10 * 1024 * 1024 // 10MB limit
+        fileSize: 25 * 1024 * 1024 // Increased to 25MB
     }
 }).single('audio')
 
 // Upload song
 router.post('/upload', (req, res) => {
+    // Set timeout for this specific route
+    req.setTimeout(300000); // 5 minutes
+    
     upload(req, res, async function(err) {
         if (err instanceof multer.MulterError) {
             return res.status(400).json({ error: 'File upload error: ' + err.message })

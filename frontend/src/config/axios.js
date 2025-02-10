@@ -8,8 +8,8 @@ const api = axios.create({
         'Content-Type': 'application/json',
         'Accept': 'application/json'
     },
-    // Add timeout and validate status
-    timeout: 10000,
+    // Increase timeout for file uploads
+    timeout: 60000, // 60 seconds
     validateStatus: (status) => {
         return status >= 200 && status < 500; // Handle only 5xx errors as errors
     }
@@ -18,6 +18,10 @@ const api = axios.create({
 // Add request interceptor for debugging
 api.interceptors.request.use(
     config => {
+        // Increase timeout specifically for upload endpoint
+        if (config.url === '/api/songs/upload') {
+            config.timeout = 120000; // 2 minutes for uploads
+        }
         console.log('Request Details:', {
             url: config.baseURL + config.url,
             method: config.method,
