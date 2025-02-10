@@ -112,4 +112,38 @@ router.patch('/:id', async (req, res) => {
     }
 })
 
+// Create a new song
+router.post('/', async (req, res) => {
+    try {
+        console.log('Received song data:', req.body)
+        
+        const { title, artist, audioUrl, cloudinaryId, duration } = req.body
+        
+        if (!title || !audioUrl || !cloudinaryId) {
+            return res.status(400).json({ 
+                error: 'Missing required fields' 
+            })
+        }
+
+        const newSong = new Song({
+            title,
+            artist: artist || 'Unknown Artist',
+            audioUrl,
+            cloudinaryId,
+            duration: duration || '0:00'
+        })
+
+        const savedSong = await newSong.save()
+        console.log('Saved song:', savedSong)
+        
+        res.status(201).json(savedSong)
+    } catch (error) {
+        console.error('Error saving song:', error)
+        res.status(500).json({ 
+            error: 'Failed to save song',
+            details: error.message 
+        })
+    }
+})
+
 export default router 

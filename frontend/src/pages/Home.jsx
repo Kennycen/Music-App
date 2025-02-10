@@ -21,13 +21,22 @@ const Home = () => {
       setIsUploading(true)
       setError("")
 
-      const response = await api.post('/api/songs', {
+      console.log('Uploading to database:', {
         title: songName,
         artist: artist || 'Unknown Artist',
         audioUrl: result.audioUrl,
         cloudinaryId: result.cloudinaryId,
+      })
+
+      const response = await api.post('/api/songs', {
+        title: songName,
+        artist: artist || 'Unknown Artist',
+        audioUrl: result.info.secure_url,
+        cloudinaryId: result.info.public_id,
         duration: '0:00'
       })
+
+      console.log('Database response:', response.data)
 
       // Reset form
       setSongName("")
@@ -69,10 +78,7 @@ const Home = () => {
         if (!error && result) {
           switch (result.event) {
             case 'success':
-              handleUploadSuccess({
-                audioUrl: result.info.secure_url,
-                cloudinaryId: result.info.public_id,
-              })
+              handleUploadSuccess(result)
               setUploadProgress(100)
               break;
             case 'progress':
