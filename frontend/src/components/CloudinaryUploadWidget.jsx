@@ -2,13 +2,13 @@ import React, { useEffect, useCallback } from 'react'
 
 const CloudinaryUploadWidget = ({ onUploadSuccess, onUploadError }) => {
     const cloudName = import.meta.env.VITE_CLOUDINARY_NAME
-    const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
+    const apiKey = import.meta.env.VITE_CLOUDINARY_API_KEY
 
     const createUploadWidget = useCallback(() => {
         return window.cloudinary.createUploadWidget(
             {
                 cloudName: cloudName,
-                uploadPreset: uploadPreset,
+                apiKey: apiKey,
                 sources: ['local'],
                 multiple: false,
                 maxFileSize: 25000000, // 25MB
@@ -63,7 +63,7 @@ const CloudinaryUploadWidget = ({ onUploadSuccess, onUploadError }) => {
                 }
             }
         )
-    }, [cloudName, uploadPreset, onUploadSuccess, onUploadError])
+    }, [cloudName, apiKey, onUploadSuccess, onUploadError])
 
     useEffect(() => {
         const widget = createUploadWidget()
