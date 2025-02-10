@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import SongList from '../components/SongList'
@@ -17,6 +17,8 @@ const PlaylistView = () => {
   const { playPlaylist, currentSong, isPlaying, currentIndex, currentTime, togglePlay } = useAudio()
   const [modalOpen, setModalOpen] = useState(false)
   const [selectedSong, setSelectedSong] = useState(null)
+  const [currentSongIndex, setCurrentSongIndex] = useState(0)
+  const audioRef = useRef(null)
 
   useEffect(() => {
     const fetchPlaylist = async () => {
@@ -74,6 +76,28 @@ const PlaylistView = () => {
       handlePlay(0) // Start with the first (newest) song
     }
   }, [playlist])
+
+  // Handle song end and auto-play next
+  const handleSongEnd = () => {
+    if (playlist && playlist.songs.length > currentSongIndex + 1) {
+      // Play next song
+      setCurrentSongIndex(prevIndex => prevIndex + 1)
+    } else {
+      // Reset to first song or stop playing
+      setCurrentSongIndex(0)
+      setIsPlaying(false)
+    }
+  }
+
+  // Update audio source when currentSongIndex changes
+  useEffect(() => {
+    if (playlist && playlist.songs[currentSongIndex]) {
+      audioRef.current.src = playlist.songs[currentSongIndex].audioUrl
+      if (isPlaying) {
+        audioRef.current.play()
+      }
+    }
+  }, [currentSongIndex, playlist])
 
   if (loading) {
     return (
