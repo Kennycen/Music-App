@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import SongList from '../components/SongList'
@@ -14,7 +14,14 @@ const PlaylistView = () => {
   const [playlist, setPlaylist] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
-  const { playPlaylist, currentSong, isPlaying, currentIndex, currentTime, togglePlay } = useAudio()
+  const { 
+    playPlaylist, 
+    currentSong, 
+    isPlaying, 
+    currentIndex, 
+    currentTime, 
+    togglePlay
+  } = useAudio()
   const [modalOpen, setModalOpen] = useState(false)
   const [selectedSong, setSelectedSong] = useState(null)
 
@@ -71,7 +78,7 @@ const PlaylistView = () => {
   // Play newest song when coming from panel
   useEffect(() => {
     if (playlist && playlist.songs.length > 0 && !currentSong) {
-      handlePlay(0) // Start with the first (newest) song
+      handlePlay(0)
     }
   }, [playlist])
 
