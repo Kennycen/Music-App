@@ -1,60 +1,96 @@
 import React, { useState } from 'react'
 import { FaUpload } from 'react-icons/fa'
 import api from '../config/axios'
+import CloudinaryUploadWidget from '../components/CloudinaryUploadWidget'
 
 const Home = () => {
-  const [file, setFile] = useState(null)
   const [songName, setSongName] = useState("")
   const [artist, setArtist] = useState("")
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState("")
+  const [uploadedFile, setUploadedFile] = useState(null)
+  const [uploadProgress, setUploadProgress] = useState(0)
 
-  const handleFileChange = (e) => {
-    const selectedFile = e.target.files[0]
-    if (selectedFile && selectedFile.type.startsWith('audio/')) {
-      setFile(selectedFile)
-      setError("")
-    } else {
-      setError("Please select an audio file")
-      setFile(null)
-    }
-  }
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    if (!file || !songName) {
-      setError("Please provide a song name and audio file")
-      return
-    }
-
-    setIsUploading(true)
-    setError("")
-
-    const formData = new FormData()
-    formData.append('audio', file)
-    formData.append('title', songName)
-    if (artist.trim()) {
-      formData.append('artist', artist)
-    }
-
+  const handleUploadSuccess = async (result) => {
     try {
-      await api.post('/api/songs/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
+      if (!songName) {
+        setError("Please provide a song name")
+        return
+      }
+
+      setIsUploading(true)
+      setError("")
+
+      const response = await api.post('/api/songs', {
+        title: songName,
+        artist: artist || 'Unknown Artist',
+        audioUrl: result.audioUrl,
+        cloudinaryId: result.cloudinaryId,
+        duration: '0:00'
       })
 
       // Reset form
-      setFile(null)
       setSongName("")
       setArtist("")
+      setUploadedFile(null)
       alert('Song uploaded successfully!')
     } catch (error) {
       console.error('Upload error:', error)
-      setError(error.response?.data?.error || 'Failed to upload song')
+      setError(error.response?.data?.error || 'Failed to save song')
     } finally {
       setIsUploading(false)
     }
+  }
+
+  const handleUploadError = (error) => {
+    setError('Upload failed: ' + error.message)
+    setIsUploading(false)
+  }
+
+  const openUploadWidget = () => {
+    if (!songName) {
+      setError("Please provide a song name first")
+      return
+    }
+    
+    const widget = window.cloudinary.createUploadWidget(
+      {
+        cloudName: import.meta.env.VITE_CLOUDINARY_NAME,
+        uploadPreset: import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET,
+        sources: ['local'],
+        multiple: false,
+        maxFileSize: 25000000,
+        resourceType: 'video',
+        folder: 'music-app',
+        allowedFormats: ['mp3', 'wav'],
+        maxChunkSize: 2000000,
+      },
+      (error, result) => {
+        if (!error && result) {
+          switch (result.event) {
+            case 'success':
+              handleUploadSuccess({
+                audioUrl: result.info.secure_url,
+                cloudinaryId: result.info.public_id,
+              })
+              setUploadProgress(100)
+              break;
+            case 'progress':
+              setUploadProgress(result.data.percent)
+              break;
+            case 'error':
+              handleUploadError(result.error)
+              setUploadProgress(0)
+              break;
+          }
+        }
+        if (error) {
+          handleUploadError(error)
+          setUploadProgress(0)
+        }
+      }
+    )
+    widget.open()
   }
 
   return (
@@ -62,33 +98,7 @@ const Home = () => {
       <div className="max-w-xl mx-auto">
         <h1 className="text-3xl font-bold mb-8">Upload Music</h1>
         
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Audio File
-            </label>
-            <div className="flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-              <div className="space-y-1 text-center">
-                <FaUpload className="mx-auto h-12 w-12 text-gray-400" />
-                <div className="flex text-sm text-gray-600">
-                  <label className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500">
-                    <span>Upload a file</span>
-                    <input
-                      type="file"
-                      className="sr-only"
-                      accept="audio/*"
-                      onChange={handleFileChange}
-                    />
-                  </label>
-                </div>
-                <p className="text-xs text-gray-500">MP3, WAV up to 10MB</p>
-                {file && (
-                  <p className="text-sm text-gray-600">Selected: {file.name}</p>
-                )}
-              </div>
-            </div>
-          </div>
-
+        <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Song Name <span className="text-red-500">*</span>
@@ -119,13 +129,28 @@ const Home = () => {
           )}
 
           <button
-            type="submit"
-            disabled={isUploading}
+            type="button"
+            onClick={openUploadWidget}
+            disabled={isUploading || !songName}
             className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isUploading ? 'Uploading...' : 'Upload Music'}
+            {isUploading ? 'Uploading...' : 'Choose File & Upload'}
           </button>
         </form>
+
+        {uploadProgress > 0 && uploadProgress < 100 && (
+          <div className="mt-4">
+            <div className="w-full bg-gray-200 rounded-full h-2.5">
+              <div 
+                className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+                style={{ width: `${uploadProgress}%` }}
+              ></div>
+            </div>
+            <p className="text-sm text-gray-600 mt-1">
+              Uploading: {Math.round(uploadProgress)}%
+            </p>
+          </div>
+        )}
 
         <div className="mt-8 bg-gray-50 p-4 rounded-md">
           <h2 className="text-lg font-semibold mb-4">How to Upload</h2>
