@@ -56,7 +56,7 @@ const Home = () => {
     const widget = window.cloudinary.createUploadWidget(
       {
         cloudName: import.meta.env.VITE_CLOUDINARY_NAME,
-        apiKey: import.meta.env.VITE_CLOUDINARY_API_KEY,
+        uploadPreset: import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET,
         sources: ['local'],
         multiple: false,
         maxFileSize: 25000000,
