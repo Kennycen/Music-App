@@ -2,24 +2,15 @@ import express from 'express'
 import multer from 'multer'
 import path from 'path'
 import Song from '../models/Song.js'
+import connectCloudinary, { deleteFromCloudinary } from '../config/cloudinary.js'
 
 const router = express.Router()
 
-// Configure local storage
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, 'uploads/') // Files will be stored in uploads directory
-    },
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
-        cb(null, uniqueSuffix + path.extname(file.originalname))
-    }
-})
-
+// Configure Cloudinary storage
+const storage = connectCloudinary()
 const upload = multer({ 
-    storage: storage,
+    storage,
     fileFilter: (req, file, cb) => {
-        console.log('Processing file:', file.originalname) // Add this for debugging
         if (file.mimetype.startsWith('audio/')) {
             cb(null, true)
         } else {
@@ -31,46 +22,41 @@ const upload = multer({
     }
 }).single('audio')
 
-// Wrap multer in custom error handling
+// Upload song
 router.post('/upload', (req, res) => {
-    upload(req, res, function(err) {
+    upload(req, res, async function(err) {
         if (err instanceof multer.MulterError) {
             return res.status(400).json({ error: 'File upload error: ' + err.message })
         } else if (err) {
             return res.status(500).json({ error: 'Server error: ' + err.message })
         }
         
-        // Continue with the rest of your upload logic
-        handleUpload(req, res)
+        try {
+            if (!req.file) {
+                return res.status(400).json({ error: 'No audio file uploaded' })
+            }
+
+            const { title, artist } = req.body
+            if (!title) {
+                return res.status(400).json({ error: 'Title is required' })
+            }
+
+            const newSong = new Song({
+                title,
+                artist: artist || 'Unknown Artist',
+                audioUrl: req.file.path, // Cloudinary URL
+                cloudinaryId: req.file.filename, // Store Cloudinary public_id
+                duration: '0:00'
+            })
+
+            await newSong.save()
+            res.status(201).json(newSong)
+        } catch (error) {
+            console.error('Upload error:', error)
+            res.status(500).json({ error: 'Failed to upload song' })
+        }
     })
 })
-
-async function handleUpload(req, res) {
-    try {
-        if (!req.file) {
-            return res.status(400).json({ error: 'No audio file uploaded' })
-        }
-
-        const { title, artist } = req.body
-        if (!title) {
-            return res.status(400).json({ error: 'Title is required' })
-        }
-
-        const newSong = new Song({
-            title,
-            artist: artist || 'Unknown Artist',
-            audioUrl: `/uploads/${req.file.filename}`,
-            cloudinaryId: 'local',
-            duration: '0:00'
-        })
-
-        await newSong.save()
-        res.status(201).json(newSong)
-    } catch (error) {
-        console.error('Upload error:', error)
-        res.status(500).json({ error: 'Failed to upload song' })
-    }
-}
 
 // Get all songs
 router.get('/', async (req, res) => {
@@ -83,13 +69,20 @@ router.get('/', async (req, res) => {
     }
 })
 
-// Delete a song
+// Delete song (updated to remove from Cloudinary)
 router.delete('/:id', async (req, res) => {
     try {
-        const song = await Song.findByIdAndDelete(req.params.id)
+        const song = await Song.findById(req.params.id)
         if (!song) {
             return res.status(404).json({ error: 'Song not found' })
         }
+
+        // Delete from Cloudinary first
+        await deleteFromCloudinary(song.cloudinaryId)
+        
+        // Then delete from database
+        await Song.findByIdAndDelete(req.params.id)
+        
         res.json({ message: 'Song deleted successfully' })
     } catch (error) {
         console.error('Error deleting song:', error)

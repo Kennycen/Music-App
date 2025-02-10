@@ -21,13 +21,11 @@ try {
 // middlewares
 app.use(express.json())
 app.use(cors({
-    origin: 'http://localhost:5173',
+    origin: true, // Allow all origins
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
 }))
-
-// Serve uploaded files
-app.use('/uploads', express.static('uploads'))
 
 // Routes
 app.use('/api/songs', songsRouter)
