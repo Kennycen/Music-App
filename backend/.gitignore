@@ -45,3 +45,6 @@ logs
 *.swp
 *.swo
 .DS_Store 
+
+uploads/*
+!uploads/.gitkeep 

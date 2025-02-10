@@ -2,15 +2,12 @@ import express from 'express'
 import cors from 'cors'
 import 'dotenv/config'
 import connectDB from './config/mongodb.js'
-import connectCloudinary from './config/cloudinary.js'
-import multer from 'multer'
 import songsRouter from './routes/songs.js'
 import playlistsRouter from './routes/playlists.js'
 
 // App Config
 const app = express()
 const port = process.env.PORT || 4000
-const isDevelopment = process.env.NODE_ENV === 'development'
 
 // Connect to MongoDB
 try {
@@ -21,92 +18,50 @@ try {
     process.exit(1)
 }
 
-// Configure Cloudinary storage
-const storage = connectCloudinary()
-const upload = multer({ storage: storage })
-
 // middlewares
 app.use(express.json())
-
-// CORS configuration
-const corsOptions = {
-    origin: '*',  // Allow all origins
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    credentials: false,  // Set to false since we're using '*' for origin
+app.use(cors({
+    origin: 'http://localhost:5173',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization']
-}
+}))
 
-// Use CORS with options
-app.use(cors(corsOptions))
-
-// Make sure preflight requests work
-app.options('*', cors(corsOptions))
-
-// Add this near the top of your file
-app.use((req, res, next) => {
-    console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
-    next();
-});
+// Serve uploaded files
+app.use('/uploads', express.static('uploads'))
 
 // Routes
 app.use('/api/songs', songsRouter)
-app.use('/api/playlists', (req, res, next) => {
-    console.log('Playlist request received:', {
-        method: req.method,
-        url: req.url,
-        body: req.body,
-        query: req.query
-    });
-    next();
-}, playlistsRouter)
+app.use('/api/playlists', playlistsRouter)
 
-// Update error handling middleware
-app.use((err, req, res, next) => {
-    console.error('Error details:', {
-        message: err.message,
-        stack: err.stack,
-        path: req.path,
-        method: req.method
-    });
-    
-    res.status(err.status || 500).json({
-        error: {
-            message: err.message || 'Internal server error',
-            status: err.status || 500
-        }
-    });
-});
+// api endpoints
+app.get('/api', (req, res) => {
+    res.json({ message: 'API Working' })
+})
 
-// Add this catch-all route at the end
-app.use('*', (req, res) => {
-    console.log('404 - Route not found:', req.originalUrl);
-    res.status(404).json({
+// Handle 404 for API routes
+app.use('/api/*', (req, res) => {
+    res.status(404).json({ 
         error: {
             message: `Route ${req.originalUrl} not found`,
             status: 404
         }
-    });
-});
-
-// api endpoints
-app.get('/', (req, res)=> {
-    res.send('API Working')
+    })
 })
 
-// Upload endpoint example
-app.post('/upload', upload.single('audio'), (req, res) => {
-    try {
-        if (!req.file) {
-            return res.status(400).json({ error: 'No file uploaded' })
-        }
-        res.json({ 
-            message: 'File uploaded successfully',
-            file: req.file 
-        })
-    } catch (error) {
-        console.error('Upload error:', error)
-        res.status(500).json({ error: 'Upload failed' })
-    }
+// For all other routes, send the status
+app.use('*', (req, res) => {
+    res.status(200).json({ status: 'Server is running' })
+})
+
+// Basic error handling middleware
+app.use((err, req, res, next) => {
+    console.error('Error details:', {
+        message: err.message,
+        stack: err.stack
+    })
+    res.status(500).json({ 
+        error: err.message || 'Something went wrong!' 
+    })
 })
 
 const server = app.listen(port, () => console.log('Server started on PORT: ' + port))

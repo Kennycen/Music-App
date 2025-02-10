@@ -1,14 +1,51 @@
 import express from 'express'
 import multer from 'multer'
+import path from 'path'
 import Song from '../models/Song.js'
-import connectCloudinary from '../config/cloudinary.js'
 
 const router = express.Router()
-const storage = connectCloudinary()
-const upload = multer({ storage: storage })
 
-// Upload a new song
-router.post('/upload', upload.single('audio'), async (req, res) => {
+// Configure local storage
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/') // Files will be stored in uploads directory
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
+        cb(null, uniqueSuffix + path.extname(file.originalname))
+    }
+})
+
+const upload = multer({ 
+    storage: storage,
+    fileFilter: (req, file, cb) => {
+        console.log('Processing file:', file.originalname) // Add this for debugging
+        if (file.mimetype.startsWith('audio/')) {
+            cb(null, true)
+        } else {
+            cb(new Error('Only audio files are allowed'))
+        }
+    },
+    limits: {
+        fileSize: 10 * 1024 * 1024 // 10MB limit
+    }
+}).single('audio')
+
+// Wrap multer in custom error handling
+router.post('/upload', (req, res) => {
+    upload(req, res, function(err) {
+        if (err instanceof multer.MulterError) {
+            return res.status(400).json({ error: 'File upload error: ' + err.message })
+        } else if (err) {
+            return res.status(500).json({ error: 'Server error: ' + err.message })
+        }
+        
+        // Continue with the rest of your upload logic
+        handleUpload(req, res)
+    })
+})
+
+async function handleUpload(req, res) {
     try {
         if (!req.file) {
             return res.status(400).json({ error: 'No audio file uploaded' })
@@ -22,9 +59,9 @@ router.post('/upload', upload.single('audio'), async (req, res) => {
         const newSong = new Song({
             title,
             artist: artist || 'Unknown Artist',
-            audioUrl: req.file.path,
-            cloudinaryId: req.file.filename,
-            duration: '0:00' // Duration will be updated when first played
+            audioUrl: `/uploads/${req.file.filename}`,
+            cloudinaryId: 'local',
+            duration: '0:00'
         })
 
         await newSong.save()
@@ -33,7 +70,7 @@ router.post('/upload', upload.single('audio'), async (req, res) => {
         console.error('Upload error:', error)
         res.status(500).json({ error: 'Failed to upload song' })
     }
-})
+}
 
 // Get all songs
 router.get('/', async (req, res) => {
