@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import SongList from '../components/SongList'
 import { useAudio } from '../contexts/AudioContext'
-import { FaArrowLeft } from 'react-icons/fa'
+import { FaArrowLeft, FaArrowUp, FaArrowDown } from 'react-icons/fa'
 import MusicPlayer from '../components/MusicPlayer'
 import Modal from '../components/Modal'
 import api from '../config/axios'  // Import the configured axios instance
@@ -29,7 +29,7 @@ const PlaylistView = () => {
     const fetchPlaylist = async () => {
       try {
         setLoading(true)
-        const response = await api.get(`/api/playlists/${playlistId}`)  // Remove the base URL
+        const response = await api.get(`/api/playlists/${playlistId}`)
         setPlaylist(response.data)
         setError(null)
       } catch (err) {
@@ -53,6 +53,38 @@ const PlaylistView = () => {
     } catch (err) {
       console.error('Error removing song:', err)
       alert('Failed to remove song from playlist')
+    }
+  }
+
+  const handleMoveSong = async (songId, direction) => {
+    try {
+      const currentIndex = playlist.songs.findIndex(song => song._id === songId)
+      if (
+        (direction === 'up' && currentIndex === 0) || 
+        (direction === 'down' && currentIndex === playlist.songs.length - 1)
+      ) {
+        return // Can't move further up/down
+      }
+
+      const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1
+      const newSongs = [...playlist.songs]
+      const [movedSong] = newSongs.splice(currentIndex, 1)
+      newSongs.splice(newIndex, 0, movedSong)
+
+      // Update playlist order in backend
+      await api.put(`/api/playlists/${playlistId}/reorder`, {
+        songIds: newSongs.map(song => song._id)
+      })
+
+      // Update local state
+      setPlaylist({
+        ...playlist,
+        songs: newSongs
+      })
+      setModalOpen(false)
+    } catch (err) {
+      console.error('Error reordering songs:', err)
+      alert('Failed to reorder songs')
     }
   }
 
@@ -116,13 +148,7 @@ const PlaylistView = () => {
 
           {playlist.songs.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-gray-500 mb-4">No songs in this playlist yet.</p>
-              <button
-                onClick={() => navigate('/library')}
-                className="text-blue-500 hover:text-blue-600"
-              >
-                Add songs from your library
-              </button>
+              <p className="text-gray-500 mb-4">No songs in this playlist.</p>
             </div>
           ) : (
             <div className="bg-white shadow-md rounded-lg overflow-hidden">
@@ -134,6 +160,7 @@ const PlaylistView = () => {
                 isPlaying={isPlaying}
                 currentIndex={currentIndex}
                 currentTime={currentTime}
+                readOnly={true}
               />
             </div>
           )}
@@ -147,6 +174,23 @@ const PlaylistView = () => {
               <>
                 <p className="text-gray-600 mb-4">{selectedSong.title}</p>
                 <div className="space-y-3">
+                  <button
+                    onClick={() => handleMoveSong(selectedSong._id, 'up')}
+                    disabled={playlist.songs.indexOf(selectedSong) === 0}
+                    className="w-full flex items-center justify-center space-x-2 p-2 text-blue-600 hover:bg-blue-50 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <FaArrowUp className="mr-2" />
+                    <span>Move Up</span>
+                  </button>
+                  <button
+                    onClick={() => handleMoveSong(selectedSong._id, 'down')}
+                    disabled={playlist.songs.indexOf(selectedSong) === playlist.songs.length - 1}
+                    className="w-full flex items-center justify-center space-x-2 p-2 text-blue-600 hover:bg-blue-50 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <FaArrowDown className="mr-2" />
+                    <span>Move Down</span>
+                  </button>
+                  <div className="border-t border-gray-200 my-2"></div>
                   <button
                     onClick={() => handleRemoveSong(selectedSong._id)}
                     className="w-full flex items-center justify-center space-x-2 p-2 text-red-600 hover:bg-red-50 rounded-md"

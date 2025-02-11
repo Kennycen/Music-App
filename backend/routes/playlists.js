@@ -128,4 +128,34 @@ router.delete('/:id', async (req, res) => {
     }
 })
 
+// Add this route to handle reordering
+router.put('/:id/reorder', async (req, res) => {
+  try {
+    const { songIds } = req.body
+    
+    if (!songIds || !Array.isArray(songIds)) {
+      return res.status(400).json({ error: 'Invalid song order provided' })
+    }
+
+    const playlist = await Playlist.findById(req.params.id)
+    if (!playlist) {
+      return res.status(404).json({ error: 'Playlist not found' })
+    }
+
+    // Update the songs array with the new order
+    playlist.songs = songIds
+    await playlist.save()
+
+    // Return the updated playlist
+    const updatedPlaylist = await Playlist.findById(req.params.id)
+      .populate('songs')
+      .exec()
+
+    res.json(updatedPlaylist)
+  } catch (error) {
+    console.error('Error reordering playlist:', error)
+    res.status(500).json({ error: 'Failed to reorder playlist' })
+  }
+})
+
 export default router 
